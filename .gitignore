@@ -1,0 +1,17 @@
+bin/*
+build/*
+target/*
+logs
+
+.idea/*
+.idea_modules/*
+
+.settings/*
+.project
+.classpath
+
+.gradle/*
+
+*.class
+
+RUNNING_PID
