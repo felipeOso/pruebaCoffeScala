@@ -12,12 +12,15 @@ GET     /lower/:value               controllers.HomeController.lower(value: Int)
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 
-POST /addFruta                     controllers.HomeController.addFruta
-POST /addFrutaJson                     controllers.HomeController.addFrutaJson
-POST /validateInformation                     controllers.HomeController.validateInformation
+POST /addFruta                        controllers.HomeController.addFruta
+POST /addFrutaJson                    controllers.HomeController.addFrutaJson
+POST /validateInformation             controllers.HomeController.validateInformation
 
 
 POST /buscarFruta                     controllers.HomeController.buscarFruta
-POST /buscarFruta1                     controllers.HomeController.buscarFruta1
-GET /converterToStringOfJsValue                     controllers.HomeController.converterToStringOfJsValue
-GET /converterToJsValue                     controllers.HomeController.converterToJsValue
+POST /buscarFruta1                    controllers.HomeController.buscarFruta1
+POST /buscarFruta11                   controllers.HomeController.buscarFruta11
+GET /converterToStringOfJsValue       controllers.HomeController.converterToStringOfJsValue
+GET /converterToJsValue               controllers.HomeController.converterToJsValue
+GET /actionComposition                controllers.HomeController.actionComposition
+POST /actionCompositionBodyParser      controllers.HomeController.actionCompositionBodyParser

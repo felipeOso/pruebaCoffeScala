@@ -3,14 +3,25 @@ package controllers
 import javax.inject._
 import models.Coffee
 import persistence.CoffeeRepository
-import play.api.libs.json.{JsError, JsResult, JsValue, Json}
+import play.api.Logger
+import play.api.libs.json._
 import play.api.mvc._
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+
+//con esto creo un action que extiende  de actionbuilder y lo hago sobreescribiendo el metodo invokeBlock
+//tener en cuenta que debo declarar implicitamente el executionContext, lo hagod e forma global
+class LoggingAction @Inject() (parser: BodyParsers.Default) extends ActionBuilderImpl(parser) {
+  override def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
+    Logger.info("Calling action")
+    block(request)
+  }
+}
+
 
 
 @Singleton
-class HomeController @Inject()(cc: ControllerComponents, coffeeRepository: CoffeeRepository)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
+class HomeController @Inject()(cc: ControllerComponents, coffeeRepository: CoffeeRepository, loggingAction: LoggingAction)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
 
   populateDate()
 
@@ -20,6 +31,13 @@ class HomeController @Inject()(cc: ControllerComponents, coffeeRepository: Coffe
     val fCoffees: Future[Seq[Coffee]] = coffeeRepository.all()
 
     fCoffees.map(s => Ok(Json.toJson(s)))
+  }
+  def actionComposition() = loggingAction {
+    Ok("Hello Felipe Osorio")
+  }
+  def actionCompositionBodyParser(): Action[String] = loggingAction(parse.text) { request =>
+    val x: Int = request.body.length
+    Ok("Got a body " + s"$x" +"bytes long")
   }
 
   def lower(limit: Int) = Action.async { implicit request: Request[AnyContent] =>
@@ -63,7 +81,20 @@ class HomeController @Inject()(cc: ControllerComponents, coffeeRepository: Coffe
     val bodyParser: Option[JsValue] = (request.body).asJson
     bodyParser.map {
       json =>
-        Ok((json \ "nombre").get)
+        Ok((json \ "nombre").get).withHeaders(
+          CACHE_CONTROL -> "max age=100",
+          ETAG -> "xx"
+        )
+    }.getOrElse {
+      BadRequest("Expecting application/json request body")
+    }
+  }
+
+  def buscarFruta11() = Action { request =>
+    val bodyParser: Option[JsValue] = (request.body).asJson
+    bodyParser.map {
+      json =>
+        Ok((json \ "nombre").get).withCookies(Cookie("theme", "blue")).bakeCookies()
     }.getOrElse {
       BadRequest("Expecting application/json request body")
     }
@@ -100,13 +131,18 @@ class HomeController @Inject()(cc: ControllerComponents, coffeeRepository: Coffe
   }
   """)
 
-  def validateInformation()= Action{ request =>
-    val bodyParser: Option[JsValue] =request.body.asJson
+  def validateInformation() = Action { request =>
+    val nombre = request.body.asJson.map(s => s("nombre")).get.validate[String]
+    //otra forma de validar si es correcto obtiene le valor de nombre si no desplega le mensaje de esta indefinido
+    val xorelse = nombre.getOrElse("esta indefinido")
+    Logger.debug("la salida de validate info es " + xorelse)
+    //esto me devolvera un JsSucces o un JsError
+    val nameUpperCase = nombre.map(_.toUpperCase())
+    Logger.info("la validacion con map es " + nameUpperCase)
 
-    val nameResult = ( bodyParser.map(json=>json("nombre")))
-    nameResult match {
-      case s => Ok("el nombre es "+ s.get)
-      case e => BadRequest("el nombre qeu envio no es un String")
+    nombre match {
+      case s: JsSuccess[String] => Ok("el nombre es " + s.get)
+      case e: JsError => BadRequest("el nombre qeu envio no es un String" + JsError.toJson(e).toString())
     }
   }
 
